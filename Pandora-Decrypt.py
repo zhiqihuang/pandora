@@ -6,14 +6,16 @@
 from Crypto.Cipher import AES
 import hashlib
 import getpass
+import os
 import random
 import base64
 from Crypto.PublicKey import RSA
 
 
 # In[2]:
-
-private_key_location = raw_input("private key localtion: ")
+key_name = 'RSA-PrivateKey.txt'
+path = raw_input("private key localtion: ")
+private_key_location = os.path.join(path, key_name)
 aes_key = getpass.getpass('AES Key: ').encode('utf-8')
 f = open(private_key_location,'r')
 private = f.read()
