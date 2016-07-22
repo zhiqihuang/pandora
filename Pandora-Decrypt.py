@@ -53,5 +53,6 @@ if opt == 'save':
         f.write("""%s,%s\n"""%(i[0],i[1]))
     f.close()
 else:
-    print pandora
+    for i in pandora:
+        print i
 
