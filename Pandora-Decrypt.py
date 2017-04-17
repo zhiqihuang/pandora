@@ -2,7 +2,8 @@
 # coding: utf-8
 
 # In[1]:
-
+#pycrypto==2.6.1 !important, the method might change between versions
+import Crypto #important
 from Crypto.Cipher import AES
 import hashlib
 import getpass
