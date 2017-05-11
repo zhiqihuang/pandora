@@ -46,14 +46,18 @@ def decode(private,aes_key,pw_list):
 
 pandora = decode(private,aes_key,pw_list)
 print "!!Warning!! Pandora is opened"
-opt = raw_input("save or print: ")
-if opt == 'save':
-    print "saved to the same dirctory with private key. !!Delete after viewing!!"
-    f=open('/'.join(private_key_location.split('/')[0:(len(private_key_location.split('/'))-1)])+'/pandora-opened.txt','w')
-    for i in pandora:
-        f.write("""%s,%s\n"""%(i[0],i[1]))
-    f.close()
-else:
-    for i in pandora:
-        print i
+
+while(1):
+    opt = raw_input("save or print: ")
+    if opt == 'save':
+        print "saved to the same dirctory with private key. !!Delete after viewing!!"
+        f=open('/'.join(private_key_location.split('/')[0:(len(private_key_location.split('/'))-1)])+'/pandora-opened.txt','w')
+        for i in pandora:
+            f.write("""%s,%s\n"""%(i[0],i[1]))
+        f.close()
+        break
+    elif opt == 'print':
+        for i in pandora:
+            print i
+        break
 
