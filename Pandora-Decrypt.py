@@ -10,18 +10,19 @@ import getpass
 import os
 import random
 import base64
+import sys
 from Crypto.PublicKey import RSA
 
 
 # In[2]:
-key_name = 'RSA-PrivateKey.txt'
-path = raw_input("private key localtion: ")
+key_name = 'pandora_private_key.pem'
+path = sys.argv[1]
 private_key_location = os.path.join(path, key_name)
 aes_key = getpass.getpass('AES Key: ').encode('utf-8')
 f = open(private_key_location,'r')
 private = f.read()
 f.close()
-f = open('pandora.txt','r')
+f = open('pandora.data','r')
 pw_list = f.read().splitlines() 
 f.close()
 

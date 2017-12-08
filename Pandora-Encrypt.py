@@ -11,12 +11,13 @@ import base64
 from Crypto.PublicKey import RSA
 
 
+
 # In[2]:
 
-f = open('RSA-PublicKey.txt','r')
+f = open('pandora_public_key.pem','r')
 public = f.read()
 f.close()
-f = open('pandora.txt','r')
+f = open('pandora.data','r')
 pw_list = [x.split('\t') for x in f.read().splitlines()]
 f.close()
 account = raw_input('account info: ').encode('utf-8')
@@ -46,7 +47,7 @@ if encoded[0] in [x[0] for x in pw_list]:
 else:
 	pw_list.append(encoded)
 	updated_list = pw_list
-f = open('pandora.txt','w')
+f = open('pandora.data','w')
 
 for i in updated_list:
 	f.write("""%s"""%i[0])
