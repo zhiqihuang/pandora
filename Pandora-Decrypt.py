@@ -47,6 +47,7 @@ def decode(private,aes_key,pw_list):
 
 pandora = decode(private,aes_key,pw_list)
 print "!!Warning!! Pandora is opened"
+pandora.sort(key=lambda x: x[0])
 
 while(1):
     opt = raw_input("save or print: ")
