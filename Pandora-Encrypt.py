@@ -24,7 +24,7 @@ account = input('account info: ').encode('utf-8')
 username = input('username: ')
 password = getpass.getpass('password: ')
 aes_key = getpass.getpass('AES Key: ').encode('utf-8')
-action = input('action: ')
+action = input('action(update|remove): ')
 init_string = [account,'|'.join([username,password]).encode('utf-8')]
 
 # In[7]:
