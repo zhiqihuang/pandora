@@ -23,7 +23,7 @@ f = open(private_key_location,'r')
 private = f.read()
 f.close()
 f = open('pandora.data','r')
-pw_list = f.read().splitlines() 
+pw_list = f.read().splitlines()
 f.close()
 
 
