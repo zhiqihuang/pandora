@@ -13,6 +13,8 @@ import base64
 import sys
 from Crypto.PublicKey import RSA
 
+import time
+time.clock = time.process_time
 
 # In[2]:
 key_name = 'pandora_private_key.pem'
