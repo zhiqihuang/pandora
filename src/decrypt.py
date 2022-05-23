@@ -1,4 +1,5 @@
-import getpass
+import argparse
+import os
 import bcrypt
 from hashlib import sha256
 from base64 import b64decode
@@ -16,11 +17,10 @@ def decrypt_account(account_aes, passphrase_hash):
     except:
         return "Incorrect decryption"
 
-def main(encrypt_data):
+def main(private_key, encrypt_data):
     print("Answer the following questions to create AES key.")
     hashed_answers = security_questions()
     pandora_data = load_pandora_data(encrypt_data)
-    private_key = input("Path to RSA private key:  ").encode('utf-8')
     rsa_object = load_rsa_key(private_key)
     cipher_rsa = PKCS1_OAEP.new(rsa_object)
     
@@ -45,9 +45,26 @@ def main(encrypt_data):
         credentials.append([account_name, username, password])
     
     credentials = sorted(credentials, key=lambda x:x[0])
-    for account, username, passwd in credentials:
-        print(f"Account: {account}\t Username:{username}\t Password:{passwd}")
+    confirm = input("type open to confirm printing:  ")
+    if confirm.lower().strip() == 'open':
+        for account, username, passwd in credentials:
+            print(f"Account: {account}\t Username:{username}\t Password:{passwd}")
+    else:
+        print("canceled.")
         
         
 if __name__ == '__main__':
-    main(encrypt_data='../data/pandora_data.bin')
+    parser = argparse.ArgumentParser(description='pandora decrypt script')
+    parser.add_argument(
+        "-k",
+        "--rsa_private_key",
+        default='',
+        type=str,
+        required=True,
+        help="path to the rsa private key.",
+    )
+    args = parser.parse_args()
+    if args and os.path.exists(args.rsa_private_key):
+        main(private_key=args.rsa_private_key, encrypt_data='../data/pandora_data.bin')
+    else:
+        print("error, please check rsa private key file.")
