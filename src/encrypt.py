@@ -1,82 +1,67 @@
+from Crypto.PublicKey import RSA # type: ignore
+from Crypto.Random import get_random_bytes # type: ignore
+from Crypto.Cipher import AES, PKCS1_OAEP # type: ignore
 import getpass
-import bcrypt
 from base64 import b64encode
-from hashlib import sha256
-from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
-from questions import security_questions
-from util import load_pandora_data, rsa_encrypt, save_pandora_data
+from util import load_pandora_jsonl, save_pandora_jsonl
 
 def encrypt_input(cipher_aes):
-    username = input('Username: ')
-    password = getpass.getpass('Password: ')
-    ciphertext = cipher_aes.encrypt('|'.join([username,password]).encode('utf-8'))
-    return b64encode(ciphertext).decode('utf-8')
+    username = input("Username: ")
+    password = getpass.getpass("Password: ")
+    ciphertext, tag = cipher_aes.encrypt_and_digest("|".join([username,password]).encode("utf-8"))
+    return ciphertext, tag
 
-
-def find_account(account, hashed_answers, pandora_data):
-    print("search account info...")
-    for i, data in enumerate(pandora_data):
-        salt, ciphertext = data[:2]
-        salt = salt.encode()
-        passphrase_hash = sha256(bcrypt.hashpw(hashed_answers, salt)).digest()
-        cipher_aes = AES.new(passphrase_hash[:16], AES.MODE_EAX, nonce=passphrase_hash[16:])
-        account_aes = b64encode(cipher_aes.encrypt(account)).decode('utf-8')
-        if account_aes == ciphertext:
-            return i
-    return -1
-
-def encrypt_account(account, passphrase_hash):
-    cipher_aes = AES.new(passphrase_hash[:16], AES.MODE_EAX, nonce=passphrase_hash[16:])
-    account_aes = b64encode(cipher_aes.encrypt(account)).decode('utf-8')
-    return account_aes
-
+def bytes_to_str(data):
+    return b64encode(data).decode("utf-8")
 
 def main(public_key, encrypt_data):
-    account = input('Account info: ').encode('utf-8')
-    action = input('Action(create|update|delete): ')
-    assert action in ['create', 'update', 'delete'], 'operation not recognized.'
     
-    print("Answer the following questions to create AES key.")
-    hashed_answers = security_questions()
-    pandora_data = load_pandora_data(encrypt_data)
-    index = find_account(account, hashed_answers, pandora_data)
-
-    if action == 'delete':
-        if index != -1:
+    pandora_data = load_pandora_jsonl(encrypt_data)
+    pandora_accounts = [record["account"] for record in pandora_data]
+    print("Pandora Box has the following accounts:")
+    print(sorted(pandora_accounts))
+    
+    account = input("Account info: ")
+    action = input("Action(create|update|delete): ")
+    assert action in ["create", "update", "delete"], "operation not recognized."
+    has_account = account in pandora_accounts
+    
+    recipient_key = RSA.import_key(open(public_key).read())
+    session_key = get_random_bytes(16)
+    
+    cipher_rsa = PKCS1_OAEP.new(recipient_key)
+    enc_session_key = cipher_rsa.encrypt(session_key)
+    cipher_aes = AES.new(session_key, AES.MODE_EAX)
+    
+    if action == "delete":
+        if has_account:
+            index = pandora_accounts.index(account)
             pandora_data.pop(index)
-            save_pandora_data(pandora_data, encrypt_data)
-            print('Account removed.')
+            save_pandora_jsonl(pandora_data, encrypt_data)
+            print("Account removed.")
         else:
-            print('Account not found in Pandora data.')
+            print("Account not found in Pandora Box.")
     else:
-        salt = bcrypt.gensalt()
-        passphrase_hash = sha256(bcrypt.hashpw(hashed_answers, salt)).digest()
-        account_aes = encrypt_account(account, passphrase_hash)
-        session_key_part1 = get_random_bytes(16)
-        session_key_part2, nonce = passphrase_hash[:16], passphrase_hash[16:]
-        session_key = session_key_part1 + session_key_part2
-        encrypt_session_data = b64encode(rsa_encrypt(public_key, session_key_part1)).decode('utf-8')
-        cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce=nonce)
-        salt = salt.decode('utf-8')
-        if action == 'create':
-            if index == -1:
-                ciphertext = encrypt_input(cipher_aes)
-                new_record = [salt, account_aes, ciphertext, encrypt_session_data]
+        if action == "create":
+            if not has_account:
+                ciphertext, tag = encrypt_input(cipher_aes)
+                new_record = {"account": account, "ciphertext": " ".join([bytes_to_str(enc_session_key), bytes_to_str(cipher_aes.nonce), bytes_to_str(tag), bytes_to_str(ciphertext)])}
                 pandora_data.append(new_record)
-                save_pandora_data(pandora_data, encrypt_data)
-                print('Account added.')
+                save_pandora_jsonl(pandora_data, encrypt_data)
+                print("Account added.")
             else:
-                print('Account already exists Pandora data.')
+                print("Account already exists in Pandora Box.")
         else:
-            if index > -1:
-                ciphertext = encrypt_input(cipher_aes)
-                new_record = [salt, account_aes, ciphertext, encrypt_session_data]
-                pandora_data[index] = new_record
-                save_pandora_data(pandora_data, encrypt_data)
-                print('Account updated.')
+            if has_account:
+                ciphertext, tag = encrypt_input(cipher_aes)
+                new_record = " ".join([bytes_to_str(enc_session_key), bytes_to_str(cipher_aes.nonce), bytes_to_str(tag), bytes_to_str(ciphertext)])
+                index = pandora_accounts.index(account)
+                assert pandora_data[index]["account"] == account, "account mismatch."
+                pandora_data[index]["ciphertext"] = new_record
+                save_pandora_jsonl(pandora_data, encrypt_data)
+                print("Account updated.")
             else:
-                print('Account not found in Pandora data.')
+                print("Account not found in Pandora Box.")
 
-if __name__ == '__main__':
-    main(public_key='../data/pandora_public.pem', encrypt_data='../data/pandora_data.bin')
+if __name__ == "__main__":
+    main(public_key="../data/pandora_public.pem", encrypt_data="../data/pandora_data_v2.bin")
